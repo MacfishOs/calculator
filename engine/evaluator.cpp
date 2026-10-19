@@ -353,7 +353,7 @@ Tokens Evaluator::scan(const QString& expr, const QString& settingsDecimal)
     if (settingsDecimal.length() == 1)
         decimalPoint = settingsDecimal[0];
     else
-        decimalPoint = QLocale().decimalPoint();
+        decimalPoint = QLocale().decimalPoint().isEmpty() ? QChar('.') : QLocale().decimalPoint().at(0);
 
     // sanity check for wrong decimal separator usage
 
