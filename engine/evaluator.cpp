@@ -337,7 +337,7 @@ QString Evaluator::error() const
 
 Tokens Evaluator::tokens() const
 {
-    return scan(d->expression, d->decimalPoint);
+        chan    return scan(d->expression, d->decimalPoint);
 }
 
 Tokens Evaluator::scan(const QString& expr, const QString& settingsDecimal)
