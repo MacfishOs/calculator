@@ -49,18 +49,9 @@ protected:
         const double height = std::max(0.0, geometry().height - HeaderHeight);
         const double display = std::round(height * kDisplayShare);
         const double spacing = Theme::current().smallSpacing;
-        const double expressionTop = HeaderHeight + display - kExpressionHeight;
         header->setGeometry({0, 0, width, HeaderHeight});
-        expression->setGeometry({0, expressionTop, width, kExpressionHeight});
-
-        // The last calculation's ink ends as far above the expression's
-        // figures as the expression's row reaches below them.
-        const double baseline = expression->baseline(kExpressionHeight);
-        const RectF figures = expression->figureInk();
-        const double below = kExpressionHeight - baseline - figures.bottom();
-        const double historyBaseline = expressionTop + baseline + figures.y - below - history->figureInkBelowBaseline();
-        history->setGeometry({0, HeaderHeight, width,
-                              std::max(0.0, historyBaseline + history->descentBelowBaseline() - HeaderHeight)});
+        history->setGeometry({0, HeaderHeight, width, std::max(0.0, display - kExpressionHeight)});
+        expression->setGeometry({0, HeaderHeight + display - kExpressionHeight, width, kExpressionHeight});
         keypad->setGeometry({0, HeaderHeight + display + spacing, width, std::max(0.0, height - display - spacing)});
 
         if (Window* window = this->window())

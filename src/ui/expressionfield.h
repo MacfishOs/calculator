@@ -20,10 +20,6 @@ public:
     ExpressionField();
 
     cutefish::ui::TextField* textField() const { return m_field; }
-    // The text's baseline below the top, in a row of the height.
-    double baseline(double height) const;
-    // The ink of the figures around the baseline.
-    cutefish::ui::RectF figureInk() const;
 
     bool acceptsPointer() const override { return true; }
 
@@ -34,7 +30,6 @@ protected:
 
 private:
     cutefish::ui::TextField* m_field;
-    // Measure the text and the figures; never shown.
+    // Measures the text; never shown.
     cutefish::ui::Label* m_measure;
-    cutefish::ui::Label* m_figures;
 };

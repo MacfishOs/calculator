@@ -6,7 +6,6 @@
 #include "ui/label.h"
 #include "ui/text_field.h"
 #include "ui/theme.h"
-#include "ui/window.h"
 
 #include <algorithm>
 #include <cmath>
@@ -16,7 +15,6 @@ using namespace cutefish::ui;
 ExpressionField::ExpressionField()
     : m_field(addChild<TextField>())
     , m_measure(addChild<Label>())
-    , m_figures(addChild<Label>("7"))
 {
     setName("expressionRow");
     m_field->setName("expression");
@@ -28,20 +26,6 @@ ExpressionField::ExpressionField()
     };
     m_measure->setFontSize(FontSize);
     m_measure->setVisible(false);
-    m_figures->setFontSize(FontSize);
-    m_figures->setVisible(false);
-}
-
-double ExpressionField::baseline(double height) const
-{
-    // The field centres its line box and puts the baseline on the nearest device row.
-    const double scale = window() ? window()->scale() : 1;
-    return std::round(((height - m_measure->sizeHint().height) / 2 + m_measure->baselineOffset()) * scale) / scale;
-}
-
-RectF ExpressionField::figureInk() const
-{
-    return m_figures->inkBoundingRect();
 }
 
 void ExpressionField::layout()

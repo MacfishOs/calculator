@@ -77,6 +77,7 @@ TEST(UiTest, Layout)
             EXPECT_EQ(expression.width, size.width);
             const RectF history = windowRect(fixture.window.history());
             EXPECT_EQ(history.y, CalculatorWindow::HeaderHeight);
+            EXPECT_EQ(history.bottom(), expression.y);
 
             const RectF keypad = windowRect(fixture.window.keypad());
             const double spacing = Theme::current().smallSpacing;
@@ -284,60 +285,19 @@ TEST(UiTest, HistorySitsOnTheExpression)
     View* rows = history->contentView();
     ASSERT_EQ(rows->children().size(), 1u);
     const View* entry = rows->children().front().get();
-    // The last row's text line ends at the bottom of the history.
+    // The row's text, the large spacing under it, then the expression.
     const double spacing = Theme::current().largeSpacing;
-    EXPECT_DOUBLE_EQ(windowRect(entry).bottom(), windowRect(history).bottom());
+    EXPECT_DOUBLE_EQ(windowRect(entry).bottom() + spacing, windowRect(history).bottom());
     EXPECT_GT(windowRect(entry).y, windowRect(history).y + 20);
     EXPECT_EQ(history->scrollPosition().y, 0);
 
     for (const char* key : {"3", "+", "4", "="})
         fixture.click(key);
     ASSERT_EQ(rows->children().size(), 2u);
-    EXPECT_DOUBLE_EQ(windowRect(rows->children().back().get()).bottom(), windowRect(history).bottom());
+    EXPECT_DOUBLE_EQ(windowRect(rows->children().back().get()).bottom() + spacing, windowRect(history).bottom());
     EXPECT_DOUBLE_EQ(windowRect(rows->children().back().get()).y - windowRect(rows->children().front().get()).bottom(),
                      2 * spacing);
     EXPECT_LT(windowRect(rows->children().front().get()).y, windowRect(rows->children().back().get()).y);
-}
-
-// On the pixels: the space between the last calculation and the expression's
-// figures is the space under the figures to the bottom of the expression row.
-TEST(UiTest, HistoryAndExpressionBalance)
-{
-    for (const double scale : {1.0, 1.5, 1.75, 2.0}) {
-        Fixture fixture(scale);
-        // Figures with flat tops and feet, as the layout measures.
-        for (const char* key : {"1", "+", "6", "="})
-            fixture.click(key);
-        // No caret in the picture.
-        TestInput::setKeyboardFocus(fixture.window.window(), false);
-        const Image image = fixture.window.window().grab();
-        const RectF row = windowRect(fixture.window.expressionField());
-        const Color background = image.pixel(int(4 * scale), int((row.y + 2) * scale));
-        const auto inked = [&](int y) {
-            for (int x = int(row.width * scale / 2); x < int((row.width - 4) * scale); ++x) {
-                const Color pixel = image.pixel(x, y);
-                if (std::abs(pixel.r - background.r) + std::abs(pixel.g - background.g) + std::abs(pixel.b - background.b) > 20)
-                    return true;
-            }
-            return false;
-        };
-        // Up from the bottom of the row: the figures, then the gap, then the calculation above.
-        const int rowBottom = int(std::lround(row.bottom() * scale));
-        int y = rowBottom - 1;
-        while (!inked(y))
-            --y;
-        const int figuresBottom = y + 1;
-        while (inked(y))
-            --y;
-        const int figuresTop = y + 1;
-        while (!inked(y))
-            --y;
-        const int historyBottom = y + 1;
-        // At whole scales above one the field's glyphs are hinted shorter and
-        // its baseline lower than the label metrics the layout uses say.
-        const double tolerance = scale > 1 && scale == std::floor(scale) ? 2 * scale : 1;
-        EXPECT_NEAR(figuresTop - historyBottom, rowBottom - figuresBottom, tolerance) << scale;
-    }
 }
 
 TEST(UiTest, LayoutIsStable)

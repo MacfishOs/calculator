@@ -10,8 +10,8 @@
 
 using namespace cutefish::ui;
 
-// The rows: their text the large spacing twice apart, under the large
-// spacing at the top; the last one's text ends at the bottom.
+// The rows: each its text with the large spacing above and below it;
+// together at the bottom, next to the expression.
 class HistoryRows : public View
 {
 public:
@@ -40,12 +40,9 @@ public:
 
     double heightForWidth(double) const override
     {
-        if (m_labels.empty())
-            return 0;
-        const double spacing = Theme::current().largeSpacing;
-        double height = spacing + 2 * spacing * double(m_labels.size() - 1);
+        double height = 0;
         for (const Label* label : m_labels)
-            height += label->sizeHint().height;
+            height += rowHeight(label);
         return height;
     }
 
@@ -54,35 +51,24 @@ protected:
     {
         const double padding = Theme::current().largeSpacing;
         const double width = std::max(0.0, geometry().width - 2 * padding);
-        double y = std::max(0.0, geometry().height - heightForWidth(geometry().width)) + padding;
+        double y = std::max(0.0, geometry().height - heightForWidth(geometry().width));
         for (Label* label : m_labels) {
-            const double height = label->sizeHint().height;
-            label->setGeometry({padding, y, width, height});
-            y += height + 2 * padding;
+            label->setGeometry({padding, y + padding, width, label->sizeHint().height});
+            y += rowHeight(label);
         }
     }
 
 private:
+    static double rowHeight(const Label* label) { return label->sizeHint().height + 2 * Theme::current().largeSpacing; }
+
     std::vector<Label*> m_labels;
 };
 
 HistoryView::HistoryView()
     : m_rows(setContent<HistoryRows>())
-    , m_measure(addChild<Label>("1457"))
 {
     setName("history");
     m_rows->setLayoutHints({.fillHeight = true});
-    m_measure->setVisible(false);
-}
-
-double HistoryView::descentBelowBaseline() const
-{
-    return m_measure->sizeHint().height - m_measure->baselineOffset();
-}
-
-double HistoryView::figureInkBelowBaseline() const
-{
-    return m_measure->inkBoundingRect().bottom();
 }
 
 void HistoryView::setEntries(const std::vector<std::string>& entries)
