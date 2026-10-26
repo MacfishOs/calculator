@@ -1,58 +1,57 @@
+# SPDX-FileCopyrightText: 2026 Reion Wong <reionwong@gmail.com>
+# SPDX-License-Identifier: BSD-3-Clause
+
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_NAME cutefish-calculator)
-project(${PROJECT_NAME})
+project(cutefish-calculator VERSION 1.0 LANGUAGES CXX)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(QT Core Gui Quick QuickControls2 LinguistTools)
-find_package(Qt6 REQUIRED COMPONENTS ${QT})
+include(GNUInstallDirs)
+include(CTest)
 
-if (MSVC)
-    add_compile_options("/utf-8")
-endif ()
+find_package(CutefishToolkit REQUIRED)
 
-set(SRCS
-    main.cpp
-    calcengine.cpp
-    engine/constants.cpp
-    engine/evaluator.cpp
-    engine/functions.cpp
-    engine/hmath.cpp
-    engine/number.c
+add_library(calculator-engine STATIC
+    src/calculator.cpp
+    src/decimal.cpp
+    src/evaluator.cpp
+    src/mathfunctions.cpp
 )
+target_include_directories(calculator-engine PUBLIC src)
 
-set(RESOURCES
-    qml.qrc
+# The glyphs, built in.
+file(GLOB CALCULATOR_ICONS CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/icons/*.svg)
+set(CALCULATOR_EMBEDDED ${CMAKE_CURRENT_BINARY_DIR}/icons.cpp)
+# A list would be split into separate arguments on the way to the script.
+string(REPLACE ";" "|" CALCULATOR_ICON_LIST "${CALCULATOR_ICONS}")
+add_custom_command(OUTPUT ${CALCULATOR_EMBEDDED}
+    COMMAND ${CMAKE_COMMAND} -DOUTPUT=${CALCULATOR_EMBEDDED}
+            -DFILES=${CALCULATOR_ICON_LIST} -P ${PROJECT_SOURCE_DIR}/cmake/EmbedIcons.cmake
+    DEPENDS ${CALCULATOR_ICONS} ${PROJECT_SOURCE_DIR}/cmake/EmbedIcons.cmake
+    VERBATIM)
+
+add_library(calculator-ui STATIC
+    src/ui/calculatorwindow.cpp
+    src/ui/colors.cpp
+    src/ui/expressionfield.cpp
+    src/ui/historyview.cpp
+    src/ui/keypad.cpp
+    ${CALCULATOR_EMBEDDED}
 )
+target_include_directories(calculator-ui PUBLIC src src/ui)
+target_link_libraries(calculator-ui PUBLIC calculator-engine Cutefish::Toolkit)
 
-add_executable(${PROJECT_NAME} ${SRCS} ${RESOURCES})
-target_link_libraries(${PROJECT_NAME}
-        Qt6::Core
-        Qt6::Quick
-        Qt6::QuickControls2
-)
+add_executable(${PROJECT_NAME} src/main.cpp)
+target_compile_definitions(${PROJECT_NAME} PRIVATE CALCULATOR_VERSION="${PROJECT_VERSION}")
+target_link_libraries(${PROJECT_NAME} PRIVATE calculator-ui)
 
-file(GLOB TS_FILES translations/*.ts)
-if (TS_FILES)
-    qt6_add_translation(QM_FILES ${TS_FILES})
-    add_custom_target(translations DEPENDS ${QM_FILES} SOURCES ${TS_FILES})
-    add_dependencies(${PROJECT_NAME} translations)
-endif ()
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION /usr/bin)
+cutefish_add_translations(cutefish-calculator SOURCES src DESKTOP_FILES cutefish-calculator.desktop)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cutefish-calculator.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
-install(FILES
-    cutefish-calculator.desktop
-    DESTINATION /usr/share/applications/
-    COMPONENT Runtime
-)
-
-if (QM_FILES)
-    install(FILES ${QM_FILES} DESTINATION /usr/share/${PROJECT_NAME}/translations)
-endif ()
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
